@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAVO AI - Premium Audiogram Creator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div id="globalError">Error! Check diagnostics.</div>
+
+    <header>
+        <h1><i data-lucide="waves" style="color:var(--accent);"></i> WAVO AI</h1>
+        <button class="btn-primary-small" id="headerExportBtn">Export Project</button>
+    </header>
+
+    <div class="app-container">
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="phone-mockup">
+                <canvas id="mainCanvas" width="1080" height="1920"></canvas>
+            </div>
+        </div>
+
+        <!-- Controls Pane -->
+        <div class="controls-pane">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="audio">Audio</button>
+                <button class="tab-btn" data-tab="audio_fx">Audio FX</button>
+                <button class="tab-btn" data-tab="text">Text</button>
+                <button class="tab-btn" data-tab="visuals">Visuals</button>
+                <button class="tab-btn" data-tab="waveform">Waveform</button>
+                <button class="tab-btn" data-tab="export">Export</button>
+            </div>
+
+            <!-- AUDIO TAB -->
+            <div id="tab-audio" class="tab-content active">
+                <h3 class="section-title"><i data-lucide="music-4"></i> Audio Track</h3>
+
+                <div class="upload-box" id="audioUploadBtn">
+                    <i data-lucide="upload-cloud"></i>
+                    <p><b>Click or Drag Audio</b></p>
+                    <p>MP3, WAV, M4A up to 50MB</p>
+                </div>
+                <!-- Native File Input -->
+                <input type="file" id="audioInput" accept=".mp3,.wav,.m4a,audio/*" style="display:none;">
+
+                <div class="player-box" id="audioPlayerUI" style="display:none;">
+                    <div class="player-meta">
+                        <div class="player-title" id="audioFileName">track.mp3</div>
+                        <div id="audioStatus" style="color:var(--accent);">Ready</div>
+                    </div>
+
+                    <div
+                        style="font-size:11px; color:var(--text-muted); margin-bottom:8px; display:flex; justify-content:space-between;">
+                        <span id="timeCurrent">0:00</span>
+                        <span id="timeTotal">0:00</span>
+                    </div>
+
+                    <input type="range" id="audioScrubber" min="0" max="100" value="0">
+
+                    <div class="player-controls">
+                        <button class="btn-icon" id="btnReplay"><i data-lucide="skip-back"></i></button>
+                        <button class="btn-icon play" id="btnPlayPause"><i data-lucide="play" fill="#fff"></i></button>
+
+                        <div style="display:flex; align-items:center; gap:8px; margin-left:auto; width:40%;">
+                            <i data-lucide="volume-2" style="width:16px; color:var(--text-muted);"></i>
+                            <input type="range" id="audioVolume" min="0" max="1" step="0.05" value="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" id="btnRemoveAudio"
+                        style="margin-top:12px; padding:8px; font-size:12px;">Remove Track</button>
+                </div>
+
+                <!-- Hidden robust native audio engine -->
+                <audio id="nativeAudio" preload="metadata"></audio>
+            </div>
+
+            <!-- TEXT TAB -->
+            <div id="tab-text" class="tab-content">
+                <h3 class="section-title"><i data-lucide="type"></i> Typography</h3>
+
+                <div class="form-group">
+                    <label>Episode Title</label>
+                    <input type="text" id="optTitle" value="THE MIDNIGHT GOSPEL">
+                </div>
+                <div class="form-group">
+                    <label>Guest Name</label>
+                    <input type="text" id="optGuest" value="DUNCAN TRUSSELL">
+                </div>
+                <div class="form-group">
+                    <label>Optional Subtitle</label>
+                    <input type="text" id="optSubtitle" value="Exploring consciousness and existence...">
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Font Size</label>
+                        <input type="range" id="optTextSize" min="40" max="150" value="90">
+                    </div>
+                    <div class="form-group">
+                        <label>Line Spacing</label>
+                        <input type="range" id="optTextLineSpacing" min="1" max="2.5" step="0.1" value="1.2">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Position Y</label>
+                        <input type="range" id="optTextY" min="100" max="1800" value="400">
+                    </div>
+                    <div class="form-group">
+                        <label>Letter Spacing (Tracking)</label>
+                        <input type="range" id="optTextSpacing" min="-10" max="50" value="0">
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <label>Draw Pill Backgrounds</label><input type="checkbox" id="optTextPill">
+                </div>
+                <div class="toggle-row">
+                    <label>Text Shadow (Soft Drop)</label><input type="checkbox" id="optTextShadow" checked>
+                </div>
+                <div class="toggle-row">
+                    <label>Text Stroke/Outline</label>
+                    <select id="optTextStroke" style="width:120px;">
+                        <option value="0">None</option>
+                        <option value="2">Thin</option>
+                        <option value="4">Medium</option>
+                        <option value="8">Thick</option>
+                    </select>
+                </div>
+
+                <hr style="border-top:1px solid var(--glass-border); margin:16px 0;">
+
+                <div class="control-group">
+                    <label style="display:flex; justify-content:space-between; align-items:center;">
+                        <b>Font Library</b>
+                        <span style="font-size:11px; opacity:0.6;" id="activeFontLabel">Cairo</span>
+                    </label>
+
+                    <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
+                        <input type="text" id="fontSearch" placeholder="Search Arabic / English fonts..." style="flex:1"
+                            dir="auto">
+                        <select id="fontCategory" style="width:120px;">
+                            <option value="all">All Fonts</option>
+                            <option value="kufi">Kufi</option>
+                            <option value="naskh">Naskh</option>
+                            <option value="modern">Modern / Sans</option>
+                            <option value="display">Display</option>
+                            <option value="hand">Handwritten</option>
+                        </select>
+                    </div>
+
+                    <div class="font-grid" id="fontLibraryGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISUALS TAB -->
+            <div id="tab-visuals" class="tab-content">
+                <h3 class="section-title"><i data-lucide="image"></i> Background Image</h3>
+
+                <div class="upload-box" id="imgUploadBtn">
+                    <i data-lucide="image-plus"></i>
+                    <p><b>Upload Image (JPG/PNG)</b></p>
+                </div>
+                <input type="file" id="imgInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
+
+                <div id="imgControls" style="display:none;">
+                    <div class="form-group">
+                        <label>Zoom / Scale</label>
+                        <input type="range" id="imgZoom" min="0.5" max="3" step="0.05" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Position Y</label>
+                        <input type="range" id="imgY" min="-1000" max="1000" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Blur Intensity</label>
+                        <input type="range" id="imgBlur" min="0" max="40" value="8">
+                    </div>
+                    <button class="btn btn-danger" id="btnRemoveImg" style="padding:8px; font-size:12px;">Remove
+                        Image</button>
+                    <hr style="border-top:1px solid var(--glass-border); margin:16px 0;">
+                </div>
+
+                <!-- IMAGE STUDIO PRO -->
+                <div class="studio-pro"
+                    style="background:#f9fafb; border:1px solid #e5e7eb; padding:12px; border-radius:12px; margin-bottom:16px;">
+                    <h4 style="margin:0 0 12px 0; display:flex; gap:8px; align-items:center;"><i
+                            data-lucide="palette"></i> Image Studio (Pro)</h4>
+
+                    <!-- 1. Background Masking AI -->
+                    <div
+                        style="margin-bottom:12px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+                        <h5 style="margin:0 0 8px 0;">Subject Masking</h5>
+                        <button class="btn btn-primary-small" id="btnAiRemoveBg"
+                            style="width:100%; margin-bottom:8px;">✨ Remove Background (AI Cutout)</button>
+                        <div class="row">
+                            <div class="form-group"><label>Edge Feather</label><input type="range" id="isFeather"
+                                    min="0" max="20" value="2"></div>
+                            <div class="form-group"><label>Smoothness</label><input type="range" id="isSmooth" min="0"
+                                    max="20" value="0"></div>
+                        </div>
+                        <div class="toggle-row" style="margin-bottom:0;"><label>Show Original (Before)</label><input
+                                type="checkbox" id="isShowOrigBg"></div>
+                    </div>
+
+                    <!-- 2. Manual Brush Edit -->
+                    <div
+                        style="margin-bottom:12px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+                        <div class="toggle-row"
+                            style="margin-bottom:8px; background:transparent; border:none; padding:0; box-shadow:none;">
+                            <label style="font-weight:600;">Mask Edit Mode (Brush)</label><input type="checkbox"
+                                id="isMaskEditMode">
+                        </div>
+                        <div id="maskEditControls" style="display:none; margin-bottom:8px;">
+                            <div class="row" style="margin-bottom:8px;">
+                                <button class="btn btn-primary-small" id="btnMaskErase"
+                                    style="flex:1; background:var(--danger)">Erase</button>
+                                <button class="btn btn-primary-small" id="btnMaskRestore"
+                                    style="flex:1; background:var(--accent)">Restore</button>
+                            </div>
+                            <div class="row">
+                                <div class="form-group"><label>Brush Size</label><input type="range" id="isBrushSize"
+                                        min="5" max="250" value="60"></div>
+                                <div class="form-group"><label>Opacity</label><input type="range" id="isBrushOpacity"
+                                        min="0.1" max="1" step="0.1" value="1"></div>
+                            </div>
+                            <div class="row">
+                                <div class="form-group"><label>Hardness</label><input type="range" id="isBrushHardness"
+                                        min="0" max="1" step="0.1" value="0.5"></div>
+                            </div>
+                            <div class="row">
+                                <button class="btn btn-danger" style="flex:1; padding:4px; font-size:11px;"
+                                    id="btnMaskUndo">Undo</button>
+                                <button class="btn btn-danger" style="flex:1; padding:4px; font-size:11px;"
+                                    id="btnMaskRedo">Redo</button>
+                                <button class="btn btn-danger" style="flex:1; padding:4px; font-size:11px;"
+                                    id="btnMaskClear">Clear Mask</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Layers -->
+                    <div
+                        style="margin-bottom:12px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+                        <h5 style="margin:0 0 8px 0;">Layers</h5>
+                        <div class="form-group"><label>Blend Mode</label><select id="isBlendMode">
+                                <option value="source-over">Normal</option>
+                                <option value="multiply">Multiply</option>
+                                <option value="screen">Screen</option>
+                                <option value="overlay">Overlay</option>
+                                <option value="soft-light">Soft Light</option>
+                            </select></div>
+                        <div class="form-group"><label>Subject Opacity</label><input type="range" id="isSubjectOpacity"
+                                min="0" max="1" step="0.05" value="1"></div>
+                    </div>
+
+                    <!-- 4. Color Correction -->
+                    <div
+                        style="margin-bottom:12px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+                        <h5 style="margin:0 0 8px 0;">Color Correction</h5>
+                        <select id="isPreset" style="margin-bottom:12px;">
+                            <option value="none" selected>Default</option>
+                            <option value="cinematic">Cinematic</option>
+                            <option value="warm">Warm Glow</option>
+                            <option value="moody">Moody Dark</option>
+                            <option value="contrast">High Contrast</option>
+                            <option value="portrait">Soft Portrait</option>
+                        </select>
+                        <div class="row">
+                            <div class="form-group"><label>Brightness</label><input type="range" id="isBright" min="0"
+                                    max="2" step="0.1" value="1"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Contrast</label><input type="range" id="isCont" min="0"
+                                    max="2" step="0.1" value="1"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Exposure</label><input type="range" id="isExp" min="-1"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Saturation</label><input type="range" id="isSat" min="0"
+                                    max="3" step="0.1" value="1"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Temperature</label><input type="range" id="isTemp" min="-1"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Tint</label><input type="range" id="isTint" min="-1" max="1"
+                                    step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Highlights</label><input type="range" id="isHigh" min="-1"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Shadows</label><input type="range" id="isShad" min="-1"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Clarity</label><input type="range" id="isClar" min="0"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group"><label>Sharpen</label><input type="range" id="isSharp" min="0"
+                                    max="1" step="0.1" value="0"></div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Light FX & Advanced Background -->
+                    <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+                        <h5 style="margin:0 0 8px 0;">Light FX & Environment</h5>
+                        <div class="form-group"><label>Spotlight Tool</label><input type="range" id="isSpotlight"
+                                min="0" max="1" step="0.05" value="0"></div>
+                        <div class="form-group"><label>Noise / Grain</label><input type="range" id="isGrain" min="0"
+                                max="1" step="0.05" value="0"></div>
+                        <div class="form-group"><label>Light Leak</label><input type="range" id="isLeak" min="0" max="1"
+                                step="0.05" value="0"></div>
+                        <div class="form-group"><label>Sun Glow Radial</label><input type="range" id="isSunGlow" min="0"
+                                max="1" step="0.05" value="0"></div>
+                        <div class="form-group"><label>Gradient FX Overlay</label><input type="range" id="isGradFx"
+                                min="0" max="1" step="0.05" value="0"></div>
+                        <div class="form-group"><label>Fog / Mist Layer</label><input type="range" id="isFog" min="0"
+                                max="1" step="0.05" value="0"></div>
+                        <div class="toggle-row" style="margin-bottom:0;"><label>Add Bokeh Particles</label><input
+                                type="checkbox" id="isBokeh"></div>
+                    </div>
+                </div>
+
+                <hr style="border-top:1px solid var(--glass-border); margin:16px 0;">
+                <h4 style="font-size: 13px; color: var(--text-heading); margin-bottom: 12px;"><i
+                        data-lucide="cloud-fog"></i> Top Blur
+                    Mask (Mist Effect)</h4>
+                <div class="toggle-row">
+                    <label>Enable Top Blur Fade</label>
+                    <input type="checkbox" id="optTopBlurEnable">
+                </div>
+
+                <div id="topBlurControls" style="display:none;">
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Fade Height (%)</label>
+                            <input type="range" id="optTopBlurHeight" min="0" max="60" value="40">
+                        </div>
+                        <div class="form-group">
+                            <label>Blur Radius</label>
+                            <input type="range" id="optTopBlurStrength" min="0" max="60" value="30">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Feather Softness</label>
+                            <input type="range" id="optTopBlurFeather" min="0" max="100" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Opacity Strength</label>
+                            <input type="range" id="optTopBlurOpacity" min="0" max="1" step="0.05" value="1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Vertical Offset (Y)</label>
+                            <input type="range" id="optTopBlurY" min="-500" max="1000" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Blend Mode</label>
+                            <select id="optTopBlurBlendMode">
+                                <option value="source-over" selected>Normal</option>
+                                <option value="screen">Screen</option>
+                                <option value="soft-light">Soft Light</option>
+                                <option value="overlay">Overlay</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Mist Color Tint</label>
+                            <input type="color" id="optTopBlurColor" value="#F2F2F4"
+                                style="width:100px; height:36px; padding:0; background:transparent; border:none; cursor:pointer;">
+                        </div>
+                        <div class="form-group">
+                            <label>Color Tint Opacity</label>
+                            <input type="range" id="optTopBlurColorAlpha" min="0" max="1" step="0.05" value="0">
+                        </div>
+                    </div>
+                    <hr style="border-top:1px solid var(--glass-border); margin:16px 0;">
+                </div>
+
+                <div class="form-group">
+                    <label>Dark Overlay Opacity</label>
+                    <input type="range" id="optDarkOverlay" min="0" max="1" step="0.05" value="0">
+                </div>
+                <div class="toggle-row">
+                    <label>Enable Vignette (Edges)</label>
+                    <input type="checkbox" id="optVignette">
+                </div>
+                <div class="toggle-row">
+                    <label>Enable Particle Stars Overlay</label>
+                    <input type="checkbox" id="optStars">
+                </div>
+
+                <hr style="border-top:1px solid var(--glass-border); margin:16px 0;">
+
+                <div class="toggle-row">
+                    <label>Show Base Light Gradient</label>
+                    <input type="checkbox" id="optBaseGrad" checked>
+                </div>
+                <div class="toggle-row">
+                    <label>Transparent Background (No Color)</label>
+                    <input type="checkbox" id="optTransparentBg">
+                </div>
+                <div class="form-group" id="bgColorGroup" style="display:none; margin-top:12px;">
+                    <label>Solid Background Color (if not transparent or gradient)</label>
+                    <input type="color" id="optBgColor" value="#F2F2F4"
+                        style="width:100px; height:36px; padding:0; background:transparent; border:none; cursor:pointer;">
+                </div>
+            </div>
+
+            <!-- WAVEFORM TAB -->
+            <div id="tab-waveform" class="tab-content">
+                <h3 class="section-title"><i data-lucide="activity"></i> Audio Visualizer</h3>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Waveform Presets</label>
+                    <select id="wvPreset">
+                        <option value="none" selected>Custom Settings...</option>
+                        <option value="podcast">Podcast Clean</option>
+                        <option value="cinematic">Cinematic Minimal</option>
+                        <option value="neon">Neon Music</option>
+                        <option value="documentary">Documentary</option>
+                        <option value="spiritual">Spiritual Calm</option>
+                        <option value="trailer">Trailer Energy</option>
+                    </select>
+                </div>
+
+                <div class="toggle-row">
+                    <label>Cinematic Mode (Smoothing & Glow)</label>
+                    <input type="checkbox" id="wvCinematicMode">
+                </div>
+
+                <h4 style="font-size: 13px; color: var(--text-heading); margin: 16px 0 8px;">Waveform Library</h4>
+                <div class="row" style="margin-bottom: 12px;">
+                    <div style="flex:2;">
+                        <input type="text" id="wvSearch" placeholder="Search waveforms...">
+                    </div>
+                    <div style="flex:1.5;">
+                        <select id="wvCategoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="favorites">Favorites ⭐</option>
+                            <option value="recent">Recently Used</option>
+                            <option value="bars">1. Bars (Vertical)</option>
+                            <option value="mirror">2. Mirror & Symmetry</option>
+                            <option value="lines">3. Lines</option>
+                            <option value="dots">4. Dots & Particles</option>
+                            <option value="circular">5. Circular / Ring</option>
+                            <option value="pulse">6. Center Pulse & Minimal</option>
+                            <option value="eq">7. Spectrogram / EQ</option>
+                            <option value="cinematic">8. Special Cinematic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="wv-library-grid" id="wvLibraryGrid">
+                    <!-- Javascript will inject preview tiles here -->
+                </div>
+
+                <hr style="border-top:1px solid var(--glass-border); margin:20px 0;">
+
+                <div class="row">
+                    <div class="form-group" style="flex:0.5;">
+                        <label>Color</label>
+                        <input type="color" id="wvColor" value="#10b981">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Scale / Height</label>
+                        <input type="range" id="wvScale" min="10" max="600" value="150">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Thickness</label>
+                        <input type="range" id="wvThickness" min="1" max="40" value="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Opacity</label>
+                        <input type="range" id="wvAlpha" min="0" max="1" step="0.05" value="0.9">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Position Y (Vertical)</label>
+                        <input type="range" id="wvPosY" min="200" max="1800" value="1200">
+                    </div>
+                    <div class="form-group">
+                        <label>Glow Intensity</label>
+                        <input type="range" id="wvGlow" min="0" max="100" value="15">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Blur Softness</label>
+                        <input type="range" id="wvBlur" min="0" max="50" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Sensitivity (Gain)</label>
+                        <input type="range" id="wvSensitivity" min="1" max="60" value="10">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Smoothness</label>
+                        <input type="range" id="wvSmoothness" min="0" max="99" value="80">
+                    </div>
+                    <div class="form-group">
+                        <label>Corner Rounding (Bars)</label>
+                        <input type="range" id="wvRounding" min="0" max="20" value="0">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Color Mode</label>
+                        <select id="wvColorMode">
+                            <option value="solid" selected>Solid Color</option>
+                            <option value="gradient">Gradient (Y-axis)</option>
+                            <option value="duotone">Duo-Tone (L/R)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Stereo Mode</label>
+                        <select id="wvStereoMode">
+                            <option value="mono" selected>Mono (Combined)</option>
+                            <option value="stereo">True Stereo (L / R)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Alignment & Extra Options</label>
+                    <div
+                        style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; align-items:center; color:var(--text-main); font-size:12px;">
+                        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="wvMirror">
+                            Mirror Grid</label>
+                        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox"
+                                id="wvAutoCenter" checked> Auto-Center</label>
+                        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="wvHalo">
+                            Ambient Halo</label>
+                        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox"
+                                id="wvBeatEmphasis"> Beat Emphasis</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUDIO FX TAB -->
+            <div id="tab-audio_fx" class="tab-content">
+                <h3 class="section-title"><i data-lucide="sliders"></i> Audio Processing FX</h3>
+
+                <div class="control-group">
+                    <label>FX Preset</label>
+                    <select id="fxPreset" class="preset-select">
+                        <option value="none">Raw (No FX)</option>
+                        <option value="clean_podcast">Clean Podcast</option>
+                        <option value="cinematic_voice">Cinematic Voice</option>
+                        <option value="documentary">Documentary</option>
+                        <option value="energetic_promo">Energetic Promo</option>
+                        <option value="soft_spiritual">Soft Spiritual</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Gain (Volume)</b> <input
+                                type="checkbox" id="fxGainEnable" checked></span>
+                        <span id="fxGainVal">0 dB</span>
+                    </label>
+                    <input type="range" id="fxGain" min="-20" max="12" value="0" step="0.5">
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>3-Band EQ</b> <input
+                                type="checkbox" id="fxEqEnable" checked></span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div>
+                            <label style="font-size: 11px; text-align:center; display:block;">Low (<span
+                                    id="fxEqLowVal">0</span>)</label>
+                            <input type="range" id="fxEqLow" min="-12" max="12" value="0" step="1" style="width:100%">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; text-align:center; display:block;">Mid (<span
+                                    id="fxEqMidVal">0</span>)</label>
+                            <input type="range" id="fxEqMid" min="-12" max="12" value="0" step="1" style="width:100%">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; text-align:center; display:block;">High (<span
+                                    id="fxEqHighVal">0</span>)</label>
+                            <input type="range" id="fxEqHigh" min="-12" max="12" value="0" step="1" style="width:100%">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Compressor</b> <input
+                                type="checkbox" id="fxCompEnable"></span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
+                        <div><label>Threshold (<span id="fxCompThreshVal">-24</span>)</label><input type="range"
+                                id="fxCompThresh" min="-60" max="0" value="-24" step="1"></div>
+                        <div><label>Ratio (<span id="fxCompRatioVal">12</span>:1)</label><input type="range"
+                                id="fxCompRatio" min="1" max="20" value="12" step="1"></div>
+                        <div><label>Attack (<span id="fxCompAttackVal">3</span>ms)</label><input type="range"
+                                id="fxCompAttack" min="1" max="100" value="3" step="1"></div>
+                        <div><label>Release (<span id="fxCompReleaseVal">250</span>ms)</label><input type="range"
+                                id="fxCompRelease" min="10" max="1000" value="250" step="10"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Saturation (Warmth)</b> <input
+                                type="checkbox" id="fxSatEnable"></span>
+                        <span id="fxSatVal">0 %</span>
+                    </label>
+                    <input type="range" id="fxSat" min="0" max="100" value="0" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Stereo Panner / Width</b> <input
+                                type="checkbox" id="fxStereoEnable"></span>
+                        <span id="fxStereoVal">0 (C)</span>
+                    </label>
+                    <input type="range" id="fxStereo" min="-1" max="1" value="0" step="0.05">
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Reverb (Space)</b> <input
+                                type="checkbox" id="fxRevEnable"></span>
+                        <span id="fxRevVal">0 %</span>
+                    </label>
+                    <input type="range" id="fxRev" min="0" max="100" value="0" step="1">
+                    <select id="fxRevType" style="margin-top: 5px;">
+                        <option value="room">Room</option>
+                        <option value="hall">Hall</option>
+                        <option value="plate">Plate (Long)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display:flex; gap:0.5rem; align-items:center;"><b>Delay (Echo)</b> <input
+                                type="checkbox" id="fxDelayEnable"></span>
+                        <span id="fxDelayVal">0 %</span>
+                    </label>
+                    <input type="range" id="fxDelayMix" min="0" max="100" value="0" step="1">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
+                        <div><label>Time (<span id="fxDelayTimeVal">250</span>ms)</label><input type="range"
+                                id="fxDelayTime" min="50" max="1000" value="250" step="10"></div>
+                        <div><label>Fbk (<span id="fxDelayFbkVal">30</span>%)</label><input type="range" id="fxDelayFbk"
+                                min="0" max="90" value="30" step="1"></div>
+                    </div>
+                </div>
+
+                <button class="upload-btn" id="btnResetFx"
+                    style="margin-top:10px; background:var(--panel-bg); color:var(--text-main); border:1px solid var(--border-color)">Reset
+                    All FX to ZERO</button>
+
+            </div>
+
+            <!-- EXPORT TAB -->
+            <div id="tab-export" class="tab-content">
+                <h3 class="section-title"><i data-lucide="video"></i> Export Video (1080x1920)</h3>
+
+                <div class="form-group">
+                    <label>Video Quality (Bitrate)</label>
+                    <select id="exportQuality">
+                        <option value="6000000">Standard (6 Mbps)</option>
+                        <option value="8000000" selected>High HQ (8 Mbps)</option>
+                        <option value="12000000">Ultra Pro (12 Mbps)</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-accent" id="btnStartExport"
+                    style="margin-top:10px; padding:16px; font-size:16px;">Render & Export Video</button>
+
+                <div id="exportProgressBox"
+                    style="display:none; margin-top:20px; background:var(--glass-bg); border:1px solid var(--glass-border); padding:16px; border-radius:12px;">
+                    <p id="exportStatus"
+                        style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--accent);">Initializing
+                        Engine...</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-fill" id="exportProgress"></div>
+                    </div>
+                    <p style="font-size:11px; color:var(--text-muted); margin-top:8px;">App utilizes Native
+                        MediaRecorder architecture. Do not exit page.</p>
+                </div>
+
+                <a id="btnDownloadExport" href="#" download
+                    style="display:none; text-decoration:none; text-align:center; margin-top:15px; background:var(--primary); color:#fff; padding:12px; border-radius:8px; font-weight:700;">Download
+                    Video</a>
+                <a id="btnFallbackDownload" href="#" download
+                    style="display:none; text-decoration:none; text-align:center; margin-top:10px; background:var(--glass-bg); color:var(--text-main); border:1px solid var(--border-color); padding:10px; border-radius:8px; font-weight:600; font-size:13px;">Download
+                    WebM Backup (Skip MP4)</a>
+            </div>
+
+            <!-- DIAGNOSTICS (Bottom Console) -->
+            <div class="debug-panel" id="debugLog">
+                <div
+                    style="color:var(--text-heading); font-weight:bold; border-bottom:1px solid var(--glass-border); padding-bottom:5px; margin-bottom:5px;">
+                    Diagnostics Context</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ffmpeg/ffmpeg.js"></script>
+    <script src="app.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>
