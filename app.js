@@ -1720,16 +1720,10 @@ document.getElementById('btnStartExport').addEventListener('click', async () => 
                 }
 
                 if (webmBlob.size === 0) throw new Error("Render generated an empty video. Canvas might be frozen.");
-
+                const IS_GITHUB_PAGES = location.hostname.includes("github.io");
+               if (IS_GITHUB_PAGES) throw new Error("Skip server transcode on GitHub Pages");
                 // Attempt 1: Server Side Transcoding (Preferred for stability and speed if available)
-                try {
-                    uiStatus.innerHTML = "<i data-lucide='server' class='loader-icon'></i> Server-Side MP4 Encoding (Fast)...";
-                    uiProgress.style.width = '100%';
-                    uiProgress.style.background = '#fbbf24'; // Warning-ish yellow for process wait
-                    lucide.createIcons();
-                    log("Attempting Server-Side Transcode via /api/transcode...");
-
-                    const formData = new FormData();
+                const formData = new FormData();
                     formData.append('video', webmBlob, 'input.webm');
 
                     const reqStart = Date.now();
