@@ -1,0 +1,6 @@
+
+# Ignore local ffmpeg builds
+ffmpeg_bin/
+ffmpeg/
+*.log
+.DS_Store
